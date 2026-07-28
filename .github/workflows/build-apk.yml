@@ -45,9 +45,13 @@ jobs:
           zip -r -D -n ".png:.jpg:.jpeg:.gif:.webp:.mp3:.mp4:.ogg:.dex" \
             app-release-unsigned.apk assets/ kotlin/ META-INF/ org/ res/ \
             -x "*.DS_Store" "__MACOSX/*" ".git/*" ".github/*" ".gitignore" "*.apk" "*.keystore" "skills/*"
+          keytool -genkey -keystore release.keystore -alias releasekey \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass release -keypass release \
+            -dname "CN=Release, OU=Dev, O=JM" -noprompt
           $ANDROID_SDK_ROOT/build-tools/34.0.0/zipalign -v -p 4 app-release-unsigned.apk app-release-aligned.apk
           $ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner sign \
-            --ks release.keystore --ks-pass pass:${{ secrets.KEYSTORE_PASS }} \
+            --ks release.keystore --ks-pass pass:release \
             --out JMComic3-release.apk app-release-aligned.apk
 
       - uses: actions/upload-artifact@v4
