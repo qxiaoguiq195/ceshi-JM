@@ -28,10 +28,12 @@ jobs:
           zip -r -D -n ".png:.jpg:.jpeg:.gif:.webp:.mp3:.mp4:.ogg:.dex" \
             app-debug-unsigned.apk assets/ kotlin/ META-INF/ org/ res/ \
             -x "*.DS_Store" "__MACOSX/*" ".git/*" ".github/*" ".gitignore" "*.apk" "*.keystore" "skills/*"
-          keytool -genkey -keystore debug.keystore -alias androiddebugkey \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass android -keypass android \
-            -dname "CN=Debug, OU=Dev, O=JM" -noprompt
+          if [ ! -f debug.keystore ]; then
+            keytool -genkey -keystore debug.keystore -alias androiddebugkey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass android -keypass android \
+              -dname "CN=Debug, OU=Dev, O=JM" -noprompt
+          fi
           $ANDROID_SDK_ROOT/build-tools/34.0.0/zipalign -v -p 4 app-debug-unsigned.apk app-debug.apk
           $ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner sign \
             --ks debug.keystore --ks-pass pass:android \
@@ -45,10 +47,12 @@ jobs:
           zip -r -D -n ".png:.jpg:.jpeg:.gif:.webp:.mp3:.mp4:.ogg:.dex" \
             app-release-unsigned.apk assets/ kotlin/ META-INF/ org/ res/ \
             -x "*.DS_Store" "__MACOSX/*" ".git/*" ".github/*" ".gitignore" "*.apk" "*.keystore" "skills/*"
-          keytool -genkey -keystore release.keystore -alias releasekey \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass release -keypass release \
-            -dname "CN=Release, OU=Dev, O=JM" -noprompt
+          if [ ! -f release.keystore ]; then
+            keytool -genkey -keystore release.keystore -alias releasekey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass release -keypass release \
+              -dname "CN=Release, OU=Dev, O=JM" -noprompt
+          fi
           $ANDROID_SDK_ROOT/build-tools/34.0.0/zipalign -v -p 4 app-release-unsigned.apk app-release-aligned.apk
           $ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner sign \
             --ks release.keystore --ks-pass pass:release \
