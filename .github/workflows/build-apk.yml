@@ -21,7 +21,7 @@ jobs:
       - uses: android-actions/setup-android@v3
 
       - name: Package APK (Debug)
-        if: ${{ github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == 'both' }}
+        if: ${{ github.event_name == 'push' || github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == 'both' }}
         run: |
           rm -f META-INF/CERT.RSA META-INF/CERT.SF META-INF/MANIFEST.MF
           zip -D -0 app-debug-unsigned.apk resources.arsc classes.dex DebugProbesKt.bin AndroidManifest.xml
@@ -32,7 +32,7 @@ jobs:
             keytool -genkey -keystore debug.keystore -alias androiddebugkey \
               -keyalg RSA -keysize 2048 -validity 10000 \
               -storepass android -keypass android \
-              -dname "CN=Debug, OU=Dev, O=JM" -noprompt
+              -dname "CN=Debug, OU=Dev, O=JM" -noprompt -storetype JKS
           fi
           $ANDROID_SDK_ROOT/build-tools/34.0.0/zipalign -v -p 4 app-debug-unsigned.apk app-debug.apk
           $ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner sign \
@@ -51,7 +51,7 @@ jobs:
             keytool -genkey -keystore release.keystore -alias releasekey \
               -keyalg RSA -keysize 2048 -validity 10000 \
               -storepass release -keypass release \
-              -dname "CN=Release, OU=Dev, O=JM" -noprompt
+              -dname "CN=Release, OU=Dev, O=JM" -noprompt -storetype JKS
           fi
           $ANDROID_SDK_ROOT/build-tools/34.0.0/zipalign -v -p 4 app-release-unsigned.apk app-release-aligned.apk
           $ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner sign \
@@ -59,8 +59,14 @@ jobs:
             --out JMComic3-release.apk app-release-aligned.apk
 
       - uses: actions/upload-artifact@v4
-        if: ${{ github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == 'both' }}
+        if: ${{ github.event_name == 'push' || github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == 'both' }}
         with: {name: JMComic3-debug, path: JMComic3-debug.apk}
+      - uses: actions/upload-artifact@v4
+        if: ${{ github.event_name == 'push' || github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == 'both' }}
+        with: {name: debug-keystore, path: debug.keystore}
       - uses: actions/upload-artifact@v4
         if: ${{ github.event.inputs.build_type == 'release' || github.event.inputs.build_type == 'both' }}
         with: {name: JMComic3-release, path: JMComic3-release.apk}
+      - uses: actions/upload-artifact@v4
+        if: ${{ github.event.inputs.build_type == 'release' || github.event.inputs.build_type == 'both' }}
+        with: {name: release-keystore, path: release.keystore}
