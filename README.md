@@ -115,8 +115,21 @@ jmcomic-apk-mod-skill/
 ├── README.md
 └── jmcomic-apk-mod/
     └── SKILL.md          # 核心 Skill 文件（805 行）
+
+
+
+
+
+
+
+
 相关项目
 JMComic3-APK-NO-Ads — 修改后的 JMComic3 去广告版 APK 源码仓库，本 Skill 的实战来源
+
+
+
+
+
 许可
 本项目仅用于学习和研究目的。请勿将修改后的 APK 用于盈利或商业分发。
 
