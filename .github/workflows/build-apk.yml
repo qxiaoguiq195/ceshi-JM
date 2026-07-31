@@ -1,0 +1,72 @@
+name: Build APK
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'APK type'
+        required: true
+        type: choice
+        options: [debug, release, both]
+        default: debug
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {java-version: '17', distribution: 'temurin'}
+      - uses: android-actions/setup-android@v3
+
+      - name: Package APK (Debug)
+        if: ${{ github.event_name == 'push' || github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == 'both' }}
+        run: |
+          rm -f META-INF/CERT.RSA META-INF/CERT.SF META-INF/MANIFEST.MF
+          zip -D -0 app-debug-unsigned.apk resources.arsc classes.dex DebugProbesKt.bin AndroidManifest.xml
+          zip -r -D -n ".png:.jpg:.jpeg:.gif:.webp:.mp3:.mp4:.ogg:.dex" \
+            app-debug-unsigned.apk assets/ kotlin/ META-INF/ org/ res/ \
+            -x "*.DS_Store" "__MACOSX/*" ".git/*" ".github/*" ".gitignore" "*.apk" "*.keystore" "skills/*"
+          if [ ! -f debug.keystore ]; then
+            keytool -genkey -keystore debug.keystore -alias androiddebugkey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass android -keypass android \
+              -dname "CN=Debug, OU=Dev, O=JM" -noprompt -storetype JKS
+          fi
+          $ANDROID_SDK_ROOT/build-tools/34.0.0/zipalign -v -p 4 app-debug-unsigned.apk app-debug.apk
+          $ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner sign \
+            --ks debug.keystore --ks-pass pass:android \
+            --out JMComic3-debug.apk app-debug.apk
+
+      - name: Package APK (Release)
+        if: ${{ github.event.inputs.build_type == 'release' || github.event.inputs.build_type == 'both' }}
+        run: |
+          rm -f META-INF/CERT.RSA META-INF/CERT.SF META-INF/MANIFEST.MF
+          zip -D -0 app-release-unsigned.apk resources.arsc classes.dex DebugProbesKt.bin AndroidManifest.xml
+          zip -r -D -n ".png:.jpg:.jpeg:.gif:.webp:.mp3:.mp4:.ogg:.dex" \
+            app-release-unsigned.apk assets/ kotlin/ META-INF/ org/ res/ \
+            -x "*.DS_Store" "__MACOSX/*" ".git/*" ".github/*" ".gitignore" "*.apk" "*.keystore" "skills/*"
+          if [ ! -f release.keystore ]; then
+            keytool -genkey -keystore release.keystore -alias releasekey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass release -keypass release \
+              -dname "CN=Release, OU=Dev, O=JM" -noprompt -storetype JKS
+          fi
+          $ANDROID_SDK_ROOT/build-tools/34.0.0/zipalign -v -p 4 app-release-unsigned.apk app-release-aligned.apk
+          $ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner sign \
+            --ks release.keystore --ks-pass pass:release \
+            --out JMComic3-release.apk app-release-aligned.apk
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ github.event_name == 'push' || github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == 'both' }}
+        with: {name: JMComic3-debug, path: JMComic3-debug.apk}
+      - uses: actions/upload-artifact@v4
+        if: ${{ github.event_name == 'push' || github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == 'both' }}
+        with: {name: debug-keystore, path: debug.keystore}
+      - uses: actions/upload-artifact@v4
+        if: ${{ github.event.inputs.build_type == 'release' || github.event.inputs.build_type == 'both' }}
+        with: {name: JMComic3-release, path: JMComic3-release.apk}
+      - uses: actions/upload-artifact@v4
+        if: ${{ github.event.inputs.build_type == 'release' || github.event.inputs.build_type == 'both' }}
+        with: {name: release-keystore, path: release.keystore}
